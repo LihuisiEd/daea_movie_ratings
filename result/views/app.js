@@ -23,11 +23,25 @@ app.controller('statsCtrl', function ($scope) {
       $scope.$apply(); // Asegúrate de aplicar los cambios al ámbito de AngularJS
     });
   };
+  
+  var updateRatings = function () {
+    socket.on('ratings', function (json) {
+      console.log('Received ratings:', json);
+      var data = JSON.parse(json);
+
+      // Puedes hacer lo que necesites con los datos de ratings, por ejemplo:
+      $scope.ratings = data;
+      
+      console.log('$scope.ratings:', $scope.ratings);
+      $scope.$apply(); // Asegúrate de aplicar los cambios al ámbito de AngularJS
+    });
+  };
 
   var init = function () {
     console.log('Initializing...');
     document.body.style.opacity = 1;
     updateSimilarities();
+    updateRatings();
   };
 
   socket.on('message', function (data) {

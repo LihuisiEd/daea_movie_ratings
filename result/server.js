@@ -37,6 +37,7 @@ async.retry(
     }
     console.log("Connected to db");
     getSimilarities(client);
+    getRatings(client);
   }
 );
 
@@ -56,6 +57,20 @@ function getSimilarities(client) {
   });
 }
 
+function getRatings(client) {
+  client.query('SELECT rating, count FROM ratings', [], function (err, result) {
+    if (err) {
+      console.error("Error performing query: " + err);
+    } else {
+      var ratings = collectRatingsFromResult(result);
+      io.sockets.emit("ratings", JSON.stringify(ratings));
+      console.log("Ratings:", JSON.stringify(ratings, null, 2));
+    }
+
+    setTimeout(function () { getRatings(client) }, 1000);
+  });
+}
+
 function collectSimilaritiesFromResult(result) {
   var similarities = {};
 
@@ -64,6 +79,16 @@ function collectSimilaritiesFromResult(result) {
   });
 
   return similarities;
+}
+
+function collectRatingsFromResult(result) {
+  var ratings = [];
+
+  result.rows.forEach(function (row) {
+    ratings.push({ rating: row.rating, count: row.count });
+  });
+
+  return ratings;
 }
 
 app.use(cookieParser());

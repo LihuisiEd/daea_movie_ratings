@@ -28,6 +28,24 @@
       </div>
     </div>
   </div>
+  <div id="ratings">
+    <h2>Ratings Distribution</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Rating</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="rating in ratings">
+          <td>{{ rating.rating }}</td>
+          <td>{{ rating.count }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <div id="result">
     <!-- No necesitas mostrar los resultados de la votación -->
   </div>
