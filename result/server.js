@@ -1,7 +1,6 @@
 var express = require('express'),
     async = require('async'),
     { Pool } = require('pg'),
-    cookieParser = require('cookie-parser'),
     app = express(),
     server = require('http').Server(app),
     io = require('socket.io')(server);
@@ -9,9 +8,7 @@ var express = require('express'),
 var port = process.env.PORT || 4000;
 
 io.on('connection', function (socket) {
-
   socket.emit('message', { text : 'Welcome!' });
-
   socket.on('subscribe', function (data) {
     socket.join(data.channel);
   });
@@ -36,63 +33,38 @@ async.retry(
       return console.error("Giving up");
     }
     console.log("Connected to db");
-    getSimilarities(client);
-    getRatings(client);
+    getNeighbors(client);
   }
 );
 
-
 // My functions
-function getSimilarities(client) {
-  client.query('SELECT id, similarity FROM similarities', [], function(err, result) {
+function getNeighbors(client) {
+  client.query('SELECT user_id, neighbor_id FROM neighbors', [], function(err, result) {
     if (err) {
       console.error("Error performing query: " + err);
     } else {
-      var similarities = collectSimilaritiesFromResult(result);
-      io.sockets.emit("similarities", JSON.stringify(similarities));
-      console.log("Similarities:", JSON.stringify(similarities, null, 2));
+      var neighbors = collectNeighborsFromResult(result);
+      io.sockets.emit("neighbors", JSON.stringify(neighbors));
+      console.log("Neighbors:", JSON.stringify(neighbors, null, 2));
     }
 
-    setTimeout(function() { getSimilarities(client) }, 1000);
+    setTimeout(function() { getNeighbors(client) }, 1000);
   });
 }
 
-function getRatings(client) {
-  client.query('SELECT rating, count FROM ratings', [], function (err, result) {
-    if (err) {
-      console.error("Error performing query: " + err);
-    } else {
-      var ratings = collectRatingsFromResult(result);
-      io.sockets.emit("ratings", JSON.stringify(ratings));
-      console.log("Ratings:", JSON.stringify(ratings, null, 2));
+function collectNeighborsFromResult(result) {
+  var neighbors = {};
+
+  result.rows.forEach(function (row) {
+    if (!neighbors[row.user_id]) {
+      neighbors[row.user_id] = [];
     }
-
-    setTimeout(function () { getRatings(client) }, 1000);
-  });
-}
-
-function collectSimilaritiesFromResult(result) {
-  var similarities = {};
-
-  result.rows.forEach(function (row) {
-    similarities[row.id] = row.similarity;
+    neighbors[row.user_id].push(row.neighbor_id);
   });
 
-  return similarities;
+  return neighbors;
 }
 
-function collectRatingsFromResult(result) {
-  var ratings = [];
-
-  result.rows.forEach(function (row) {
-    ratings.push({ rating: row.rating, count: row.count });
-  });
-
-  return ratings;
-}
-
-app.use(cookieParser());
-app.use(express.urlencoded());
 app.use(express.static(__dirname + '/views'));
 
 app.get('/', function (req, res) {
